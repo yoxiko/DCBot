@@ -1,0 +1,106 @@
+import discord
+import os
+from discord.ext import commands
+
+# new 
+os.system("cls")
+
+intents = discord.Intents.default()
+intents.messages = True
+intents.guilds = True
+intents.guild_messages = True
+intents.guild_messages = True 
+
+client = commands.Bot(command_prefix='!', intents=intents)
+
+# channel and button, none - your meaning
+
+ticket_guild_id = 0
+ticket_menu_id = 0
+ticket_category_id = 0
+
+menu_message = None
+
+# def seng message for channel 
+async def send_message(channel_id: int, msg):
+    print(f"Message Sent With Text: ({msg})")
+    channel = client.get_channel(channel_id)
+    if channel is not None:
+        await channel.send(msg)
+    else:
+        print("Ошибка: канал не найден")
+
+async def send_menu():
+    print("Создаю меню для тикетов")
+    channel = client.get_channel(ticket_menu_id)
+
+
+    if channel is not None:
+        global menu_message  
+
+        # embed messange (button)
+        embed = discord.Embed(title=" ", color= 0)
+        embed.set_footer(text="Для того чтоб купить, нажмите кнопку ниже.")
+
+        view = discord.ui.View()
+
+        btn = discord.ui.Button(
+            label="Купить",
+            style=discord.ButtonStyle.primary
+        )
+
+        btn.callback = create_ticket
+
+        view.add_item(btn)
+
+        # sand button
+        menu_message = await channel.send(embed=embed, view=view)
+    else:
+        print("Ошибка: канал не найден для меню тикетов")
+        view = discord.ui.View()
+
+
+        btn = discord.ui.Button(
+            label="Купить",
+            style=discord.ButtonStyle.primary
+        )
+
+        btn.callback = create_ticket
+
+        view.add_item(btn)
+
+        # Отправляем сообщение с кнопкой
+        menu_message = await channel.send(view=view)
+
+# create private  tiket
+async def create_ticket(interaction: discord.Interaction):
+    print("Пытаюсь создать тикет")
+    guild = client.get_guild(ticket_guild_id)
+
+    if guild is not None:
+        # PRIVATE
+        ticket_channel = await guild.create_text_channel(
+            f"тикет-{interaction.user.name}",
+            overwrites={
+                guild.default_role: discord.PermissionOverwrite(view_channel=False),      
+                interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True)  
+            }
+        )
+
+        await ticket_channel.send(f"{interaction.user.mention}") 
+        embed = discord.Embed(title = f"  \n -  \n  -  \n -  \n ", color = 0)
+        await ticket_channel.send(embed=embed) 
+        await interaction.response.send_message(f"Ваш тикет создан: {ticket_channel.mention}", ephemeral=True)
+
+
+
+@client.event
+async def on_ready():
+    print(f"{client.user} запущен, подключен к серверам.")
+    await send_menu()  # main menu
+
+    game = discord.Game("!!!! whatever you want !!!!") # status in bot profile))
+    await client.change_presence(activity=game)
+
+
+client.run('YOURTOKEN')
